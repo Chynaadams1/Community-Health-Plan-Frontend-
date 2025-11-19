@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import Navbar from './components/common/Navbar';
+import TestAppointments from './TestAppointments';
 
 // Auth Pages
 import Login from './pages/auth/Login';
@@ -42,41 +43,22 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
-            {/* Patient Routes */}
-            <Route
-              path="/patient/dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['patient']}>
-                  <PatientDashboard />
-                </ProtectedRoute>
-              }
-            />
+            {/* 🚑 Patient Routes – TEMPORARILY PUBLIC FOR DEMO */}
+            <Route path="/patient/dashboard" element={<PatientDashboard />} />
             <Route
               path="/patient/search-providers"
-              element={
-                <ProtectedRoute allowedRoles={['patient']}>
-                  <SearchProviders />
-                </ProtectedRoute>
-              }
+              element={<SearchProviders />}
             />
             <Route
               path="/patient/book-appointment/:providerId"
-              element={
-                <ProtectedRoute allowedRoles={['patient']}>
-                  <BookAppointment />
-                </ProtectedRoute>
-              }
+              element={<BookAppointment />}
             />
             <Route
               path="/patient/appointments"
-              element={
-                <ProtectedRoute allowedRoles={['patient']}>
-                  <AppointmentHistory />
-                </ProtectedRoute>
-              }
+              element={<AppointmentHistory />}
             />
 
-            {/* Provider Routes */}
+            {/* Provider Routes (still protected) */}
             <Route
               path="/provider/dashboard"
               element={
@@ -110,7 +92,7 @@ function App() {
               }
             />
 
-            {/* Admin Routes */}
+            {/* Admin Routes (still protected) */}
             <Route
               path="/admin/dashboard"
               element={
@@ -135,6 +117,9 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            {/* 🔍 Test Django API route */}
+            <Route path="/test-api" element={<TestAppointments />} />
 
             {/* Catch all - redirect to home */}
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -7,7 +7,8 @@ const PatientDashboard = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-gray-900 mb-6">
-        Welcome, {user.name}!
+        Welcome, {user?.first_name || user?.username || "Patient"}!
+
       </h1>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
