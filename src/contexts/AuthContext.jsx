@@ -1,25 +1,31 @@
+// ==============================================
 // src/contexts/AuthContext.jsx
+// ==============================================
 import { createContext, useContext, useState, useEffect } from "react";
 import { API_BASE_URL } from "../config";
 
-const AuthContext = createContext(null);
+const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  // Try to restore user from localStorage on first load
-  const [user, setUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem("user");
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // -----------------------------------------
+  // Load user on browser refresh
+  // -----------------------------------------
+  useEffect(() => {
+    const saved = localStorage.getItem("user");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      setUser(parsed);
+      setIsAuthenticated(true);
     }
-  });
+  }, []);
 
-  const [loading, setLoading] = useState(false);
-
-  // ✅ Call Django /api/login/
+  // -----------------------------------------
+  // LOGIN FUNCTION
+  // -----------------------------------------
   async function login(username, password) {
-    setLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/login/`, {
         method: "POST",
@@ -29,48 +35,65 @@ export function AuthProvider({ children }) {
 
       const data = await res.json();
 
-      if (!res.ok || data.status !== "ok") {
-        throw new Error(data.error || "Login failed");
+      if (data.status !== "ok") {
+        return { success: false, message: "Invalid credentials" };
       }
 
-      // Normalize the user object for the app
-      const u = {
-        id: data.user.id,
-        username: data.user.username,
-        email: data.user.email,
-        first_name: data.user.first_name,
-        last_name: data.user.last_name,
-        // 👇 This is what PatientDashboard uses
-        name: data.user.first_name || data.user.username,
-        // 👇 Temporary role so ProtectedRoute lets them in
-        role: "patient",
-        is_provider: data.user.is_provider,
-        provider_id: data.user.provider_id,
-      };
+      // save full user object including role
+      setUser(data.user);
+      setIsAuthenticated(true);
+      localStorage.setItem("user", JSON.stringify(data.user));
 
-      setUser(u);
-      localStorage.setItem("user", JSON.stringify(u));
-      return u;
-    } finally {
-      setLoading(false);
+      return { success: true, user: data.user };
+
+    } catch (err) {
+      console.error("Login error:", err);
+      return { success: false, message: "Network error" };
     }
   }
 
+  // -----------------------------------------
+  // REGISTER FUNCTION
+  // -----------------------------------------
+  async function register(username, email, password) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/register/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (data.status !== "created") {
+        return { success: false, message: data.error || "Registration failed" };
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: "Network error" };
+    }
+  }
+
+  // -----------------------------------------
+  // LOGOUT FUNCTION
+  // -----------------------------------------
   function logout() {
     setUser(null);
+    setIsAuthenticated(false);
     localStorage.removeItem("user");
   }
 
-  const value = {
-    user,
-    loading,
-    isAuthenticated: !!user,
-    login,
-    logout,
-  };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated,
+        login,
+        logout,
+        register,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

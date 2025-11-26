@@ -1,18 +1,25 @@
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+// ==============================================
+// src/components/common/ProtectedRoute.jsx
+// ==============================================
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 
-const ProtectedRoute = ({ children, allowedRoles }) => {
+export default function ProtectedRoute({ children, allowedRoles }) {
   const { isAuthenticated, user } = useAuth();
 
-  if (!isAuthenticated) {
+  // Not logged in → send to login
+  if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }
 
+  // If route has restrictions → check role
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" replace />;
+    // Send them to THEIR correct dashboard
+    if (user.role === "provider") {
+      return <Navigate to="/provider/dashboard" replace />;
+    }
+    return <Navigate to="/patient/dashboard" replace />;
   }
 
   return children;
-};
-
-export default ProtectedRoute;
+}

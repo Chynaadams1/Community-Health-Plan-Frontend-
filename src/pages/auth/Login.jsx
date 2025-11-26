@@ -1,87 +1,83 @@
-// src/pages/auth/Login.jsx
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 
-const Login = () => {
-  const { login } = useAuth();
+export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const [username, setUsername] = useState(""); // Django login uses username
-  const [password, setPassword] = useState("");
+  const [form, setForm] = useState({
+    username: "",
+    password: "",
+  });
+
   const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+
+  function handleChange(e) {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setError("");
-    setSubmitting(true);
 
-    try {
-      await login(username, password);
-      // ✅ After successful login, go to patient dashboard
-      navigate("/patient/dashboard");
-    } catch (err) {
-      console.error(err);
-      setError(err.message || "Login failed");
-    } finally {
-      setSubmitting(false);
+    const result = await login(form.username, form.password);
+    if (!result.success) {
+      setError(result.message);
+      return;
     }
+
+    const user = result.user;
+
+    if (user.role === "provider") {
+      localStorage.setItem("provider_id", user.provider_id);
+      localStorage.setItem("role", "provider");
+      return navigate("/provider/dashboard");
+    }
+
+    localStorage.setItem("patient_id", user.id);
+    localStorage.setItem("role", "patient");
+    return navigate("/patient/dashboard");
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-blue-50">
-      <div className="bg-white shadow-md rounded-lg p-8 w-full max-w-md">
-        <h1 className="text-2xl font-bold text-center mb-6">
-          Patient Login
-        </h1>
+    <div className="max-w-md mx-auto bg-white p-6 shadow rounded mt-10">
+      <h1 className="text-2xl font-bold mb-4 text-center">Login</h1>
 
-        {error && (
-          <div className="mb-4 text-sm text-red-600 bg-red-50 p-2 rounded">
-            {error}
-          </div>
-        )}
+      {error && <p className="text-red-600 mb-3 text-center">{error}</p>}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Username
-            </label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:ring-blue-300"
-              placeholder="Enter your username"
-              required
-            />
-          </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          name="username"
+          type="text"
+          placeholder="Username"
+          value={form.username}
+          onChange={handleChange}
+          className="w-full border p-2 rounded"
+        />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:ring-blue-300"
-              placeholder="Enter your password"
-              required
-            />
-          </div>
+        <input
+          name="password"
+          type="password"
+          placeholder="Password"
+          value={form.password}
+          onChange={handleChange}
+          className="w-full border p-2 rounded"
+        />
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full bg-blue-600 text-white font-semibold py-2 rounded hover:bg-blue-700 disabled:opacity-70"
-          >
-            {submitting ? "Logging in..." : "Log In"}
-          </button>
-        </form>
-      </div>
+        <button
+          type="submit"
+          className="w-full bg-blue-600 text-white py-2 rounded font-semibold"
+        >
+          Login
+        </button>
+      </form>
+
+      <p className="text-center mt-4">
+        No account?{" "}
+        <Link className="text-blue-700 font-semibold" to="/register">
+          Register
+        </Link>
+      </p>
     </div>
   );
-};
-
-export default Login;
+}

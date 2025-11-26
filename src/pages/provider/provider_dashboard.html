@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Provider Dashboard</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f7f8fa;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        .section {
+            background: white;
+            padding: 18px;
+            margin-bottom: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,.1);
+        }
+
+        .appt-card {
+            border: 1px solid #ddd;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 6px 12px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 6px;
+        }
+        .btn-danger { background: #dc3545; }
+        .btn-success { background: #28a745; }
+    </style>
+</head>
+
+<body>
+
+    <h1>Provider Dashboard</h1>
+    <p id="provider_info"></p>
+
+    <!-- Today -->
+    <div class="section">
+        <h2>Today's Appointments</h2>
+        <div id="today_list">Loading...</div>
+    </div>
+
+    <!-- Upcoming -->
+    <div class="section">
+        <h2>Upcoming Appointments</h2>
+        <div id="upcoming_list">Loading...</div>
+    </div>
+
+    <!-- Past -->
+    <div class="section">
+        <h2>Past Appointments</h2>
+        <div id="past_list">Loading...</div>
+    </div>
+
+
+<script>
+    // =====================================================
+    // SET PROVIDER ID (from login API response)
+    // =====================================================
+    const providerId = 3;
+
+    document.getElementById("provider_info").innerText = `Provider ID: ${providerId}`;
+
+    // =====================================================
+    // LOAD TODAY'S APPOINTMENTS
+    // =====================================================
+    fetch(`/providers/${providerId}/today/`)
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById("today_list");
+            container.innerHTML = "";
+
+            if (data.count === 0) {
+                container.innerHTML = "<p>No appointments today.</p>";
+                return;
+            }
+
+            data.today.forEach(appt => {
+                container.innerHTML += renderApptCard(appt);
+            });
+        });
+
+    // =====================================================
+    // LOAD UPCOMING APPOINTMENTS
+    // =====================================================
+    fetch(`/providers/${providerId}/upcoming/`)
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById("upcoming_list");
+            container.innerHTML = "";
+
+            if (data.count === 0) {
+                container.innerHTML = "<p>No upcoming appointments.</p>";
+                return;
+            }
+
+            data.upcoming.forEach(appt => {
+                container.innerHTML += renderApptCard(appt);
+            });
+        });
+
+    // =====================================================
+    // LOAD PAST APPOINTMENTS
+    // =====================================================
+    fetch(`/providers/${providerId}/past/`)
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById("past_list");
+            container.innerHTML = "";
+
+            if (data.count === 0) {
+                container.innerHTML = "<p>No past appointments.</p>";
+                return;
+            }
+
+            data.past.forEach(appt => {
+                container.innerHTML += renderApptCard(appt);
+            });
+        });
+
+
+    // =====================================================
+    // RENDER APPOINTMENT CARD
+    // =====================================================
+    function renderApptCard(appt) {
+        return `
+            <div class="appt-card">
+                <p><strong>Patient:</strong> ${appt.patient_name || "N/A"}</p>
+                <p><strong>Service:</strong> ${appt.service || "N/A"}</p>
+                <p><strong>Start:</strong> ${appt.start}</p>
+                <p><strong>End:</strong> ${appt.end}</p>
+                <p><strong>Status:</strong> ${appt.status}</p>
+
+                ${appt.status === "cancelled" ? "" : `
+                    <button class="btn btn-success" onclick="completeAppt(${appt.id})">Mark Complete</button>
+                    <button class="btn btn-danger" onclick="cancelAppt(${appt.id})">Cancel</button>
+                `}
+            </div>
+        `;
+    }
+
+
+    // =====================================================
+    // COMPLETE APPOINTMENT
+    // =====================================================
+    function completeAppt(id) {
+        fetch(`/appointments/${id}/complete/`, { method: "POST" })
+            .then(res => res.json())
+            .then(() => location.reload());
+    }
+
+    // =====================================================
+    // CANCEL APPOINTMENT
+    // =====================================================
+    function cancelAppt(id) {
+        fetch(`/appointments/${id}/cancel/`, { method: "POST" })
+            .then(res => res.json())
+            .then(() => location.reload());
+    }
+
+</script>
+
+</body>
+</html>

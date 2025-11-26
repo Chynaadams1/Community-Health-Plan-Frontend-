@@ -1,14 +1,15 @@
 // src/pages/patient/BookAppointment.jsx
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { API_BASE_URL } from "../../config";
+import { useAuth } from "../../contexts/AuthContext";
 
 const BookAppointment = () => {
-  const { providerId } = useParams();                 // from URL /patient/book-appointment/:providerId
-  const [searchParams] = useSearchParams();           // ?patient=3
+  const { providerId } = useParams();
   const navigate = useNavigate();
 
-  const patientId = searchParams.get("patient") || ""; // temporary way to know which patient
+  const { user } = useAuth(); // ⭐ GET LOGGED-IN USER
+  const patientId = user?.id || null; // ⭐ FIXED PATIENT ID
 
   // Provider info
   const [provider, setProvider] = useState(null);
@@ -16,7 +17,7 @@ const BookAppointment = () => {
   const [providerError, setProviderError] = useState("");
 
   // Form fields
-  const [patientName, setPatientName] = useState("");
+  const [patientName, setPatientName] = useState(""); // ⭐ No more default name
   const [service, setService] = useState("Physical");
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
@@ -39,6 +40,7 @@ const BookAppointment = () => {
       try {
         const res = await fetch(`${API_BASE_URL}/providers/${providerId}/`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
         const data = await res.json();
         setProvider(data.item || null);
       } catch (err) {
@@ -67,13 +69,12 @@ const BookAppointment = () => {
       return;
     }
 
-    // Build ISO datetimes like 2025-11-21T15:00:00Z (browser local time)
     const startISO = new Date(`${date}T${startTime}:00`).toISOString();
     const endISO = new Date(`${date}T${endTime}:00`).toISOString();
 
     const payload = {
       provider: Number(providerId),
-      patient: patientId ? Number(patientId) : null,
+      patient: patientId ?? null, // ⭐ AUTO CORRECT
       patient_name: patientName.trim(),
       provider_name: provider?.user_name || "",
       service: service.trim(),
@@ -85,6 +86,7 @@ const BookAppointment = () => {
 
     try {
       setSubmitting(true);
+
       const res = await fetch(`${API_BASE_URL}/appointments/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -93,20 +95,14 @@ const BookAppointment = () => {
 
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        const msg =
-          body?.error ||
-          `Could not create appointment (HTTP ${res.status}).`;
+        const msg = body?.error || `Could not create appointment (HTTP ${res.status})`;
         throw new Error(msg);
       }
 
-      const data = await res.json();
-      console.log("Created appointment:", data);
       setSuccessMessage("Appointment booked successfully!");
 
-      // Redirect to history page if we know the patient
-      if (patientId) {
-        navigate(`/patient/appointments?patient=${patientId}`);
-      }
+      // Redirect after success
+      navigate(`/patient/appointments`);
     } catch (err) {
       console.error(err);
       setFormError(err.message || "Something went wrong booking the appointment.");
@@ -118,21 +114,28 @@ const BookAppointment = () => {
   // -------------------- Render --------------------
   return (
     <div className="max-w-2xl mx-auto p-4">
+
+      {/* ⭐ BACK BUTTON */}
+      <div className="mb-4">
+        <Link
+          to="/patient/dashboard"
+          className="inline-flex items-center text-sm text-blue-600 hover:underline"
+        >
+          ← Back to Dashboard
+        </Link>
+      </div>
+
       <h1 className="text-3xl font-bold text-gray-900 mb-4">
         Book Appointment
       </h1>
 
-      {/* Provider card */}
+      {/* Provider Card */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         {loadingProvider && <p>Loading provider information…</p>}
-        {providerError && (
-          <p className="text-red-600 text-sm">{providerError}</p>
-        )}
+        {providerError && <p className="text-red-600 text-sm">{providerError}</p>}
         {provider && (
           <>
-            <h2 className="text-lg font-semibold">
-              {provider.user_name || "Provider"}
-            </h2>
+            <h2 className="text-lg font-semibold">{provider.user_name}</h2>
             <p className="text-sm text-gray-600">
               {provider.specialty_name} • {provider.location}
             </p>
@@ -145,23 +148,17 @@ const BookAppointment = () => {
         onSubmit={handleSubmit}
         className="bg-white rounded-lg shadow p-6 space-y-4"
       >
-        {formError && (
-          <p className="text-red-600 text-sm">{formError}</p>
-        )}
-        {successMessage && (
-          <p className="text-green-600 text-sm">{successMessage}</p>
-        )}
+        {formError && <p className="text-red-600 text-sm">{formError}</p>}
+        {successMessage && <p className="text-green-600 text-sm">{successMessage}</p>}
 
         <div>
-          <label className="block mb-1 text-sm font-medium">
-            Patient Name
-          </label>
+          <label className="block mb-1 text-sm font-medium">Patient Name</label>
           <input
             type="text"
             className="border rounded px-3 py-2 w-full"
             value={patientName}
             onChange={(e) => setPatientName(e.target.value)}
-            placeholder="e.g. Chyna Adams"
+            placeholder="First and last name"
           />
         </div>
 
@@ -179,9 +176,7 @@ const BookAppointment = () => {
         </div>
 
         <div>
-          <label className="block mb-1 text-sm font-medium">
-            Date
-          </label>
+          <label className="block mb-1 text-sm font-medium">Date</label>
           <input
             type="date"
             className="border rounded px-3 py-2 w-full"
@@ -192,9 +187,7 @@ const BookAppointment = () => {
 
         <div className="flex gap-4">
           <div className="flex-1">
-            <label className="block mb-1 text-sm font-medium">
-              Start Time
-            </label>
+            <label className="block mb-1 text-sm font-medium">Start Time</label>
             <input
               type="time"
               className="border rounded px-3 py-2 w-full"
@@ -202,10 +195,9 @@ const BookAppointment = () => {
               onChange={(e) => setStartTime(e.target.value)}
             />
           </div>
+
           <div className="flex-1">
-            <label className="block mb-1 text-sm font-medium">
-              End Time
-            </label>
+            <label className="block mb-1 text-sm font-medium">End Time</label>
             <input
               type="time"
               className="border rounded px-3 py-2 w-full"
@@ -216,9 +208,7 @@ const BookAppointment = () => {
         </div>
 
         <div>
-          <label className="block mb-1 text-sm font-medium">
-            Notes (optional)
-          </label>
+          <label className="block mb-1 text-sm font-medium">Notes (optional)</label>
           <textarea
             className="w-full border rounded px-3 py-2 text-sm"
             rows={3}
@@ -241,5 +231,3 @@ const BookAppointment = () => {
 };
 
 export default BookAppointment;
-
-

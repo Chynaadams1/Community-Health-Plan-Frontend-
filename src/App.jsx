@@ -7,6 +7,12 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import Navbar from './components/common/Navbar';
 import TestAppointments from './TestAppointments';
 
+// Provider Pages
+import ProviderDashboard from './pages/provider/ProviderDashboard';
+import ManageAvailability from './pages/provider/ManageAvailability';
+import ManageBookings from './pages/provider/ManageBookings';
+import ProviderProfile from './pages/provider/ProviderProfile';
+
 // Auth Pages
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -16,12 +22,6 @@ import PatientDashboard from './pages/patient/PatientDashboard';
 import SearchProviders from './pages/patient/SearchProviders';
 import BookAppointment from './pages/patient/BookAppointment';
 import AppointmentHistory from './pages/patient/AppointmentHistory';
-
-// Provider Pages
-import ProviderDashboard from './pages/provider/ProviderDashboard';
-import ManageAvailability from './pages/provider/ManageAvailability';
-import ManageBookings from './pages/provider/ManageBookings';
-import ProviderProfile from './pages/provider/ProviderProfile';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -43,22 +43,13 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
-            {/* 🚑 Patient Routes – TEMPORARILY PUBLIC FOR DEMO */}
+            {/* 🚑 Patient Routes — TEMPORARILY PUBLIC FOR DEMO */}
             <Route path="/patient/dashboard" element={<PatientDashboard />} />
-            <Route
-              path="/patient/search-providers"
-              element={<SearchProviders />}
-            />
-            <Route
-              path="/patient/book-appointment/:providerId"
-              element={<BookAppointment />}
-            />
-            <Route
-              path="/patient/appointments"
-              element={<AppointmentHistory />}
-            />
+            <Route path="/patient/search-providers" element={<SearchProviders />} />
+            <Route path="/patient/book-appointment/:providerId" element={<BookAppointment />} />
+            <Route path="/patient/appointments" element={<AppointmentHistory />} />
 
-            {/* Provider Routes (still protected) */}
+            {/* Provider Routes (Protected) */}
             <Route
               path="/provider/dashboard"
               element={
@@ -92,7 +83,7 @@ function App() {
               }
             />
 
-            {/* Admin Routes (still protected) */}
+            {/* Admin Routes */}
             <Route
               path="/admin/dashboard"
               element={
@@ -118,10 +109,10 @@ function App() {
               }
             />
 
-            {/* 🔍 Test Django API route */}
+            {/* Debug/Test Route */}
             <Route path="/test-api" element={<TestAppointments />} />
 
-            {/* Catch all - redirect to home */}
+            {/* Catch all */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
